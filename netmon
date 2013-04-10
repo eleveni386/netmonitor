@@ -1,0 +1,29 @@
+#!/bin/bash
+
+_sudo=`which sudo`
+if [ -z $_sudo ]
+then
+    echo "sudo is not fonud"
+    exit 1
+fi
+
+passwd=$1
+pwdfile="$HOME/.monitor_windows.pwd"
+
+if [ -z $passwd ]
+then
+    if [ -f $pwdfile ]
+    then
+        passwd=`cat $pwdfile`
+        echo $passwd|$_sudo -S ./netmonitor.py &
+        echo
+    else
+        echo "please entry User password for sudo"
+        echo "exp: $0 eleven.i386(your password)"
+        exit 1
+    fi
+else
+    echo $passwd > $pwdfile
+    echo $passwd|$_sudo -S ./netmonitor.py &
+    echo
+fi
