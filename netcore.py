@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 #
 #   Author  :   eleven.i386
+#   WebSite :   eleveni386.7axu.com
 #   E-mail  :   eleven.i386@gmail.com
 #   Date    :   13/04/04 01:01:09
 #   Desc    :   常用网络方法
