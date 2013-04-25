@@ -11,14 +11,38 @@
 import gtk
 import cairo
 import gobject
+import thread
+import time
 import netpcap
 
 is_show = True
+netread = netpcap.proc_traff()
 
-class other_win(gtk.Window):
+def flush():
+    global netread
+    while 1:
+        netread = netpcap.read()
+
+thread.start_new_thread(flush,())
+
+def color_hex(color):
+    gdk_color = gtk.gdk.color_parse(color)
+    return (gdk_color.red / 65535.0, gdk_color.green / 65535.0, gdk_color.blue / 65535.0)
+
+# UI配置 #################
+swin_size = 220, 40
+bwin_size = 300, 300
+location = 1110, 26
+transparency = 0.8
+bg_pic = "./skin/bg.png"
+fg = color_hex("#5E50E7")
+font_size = 14.0
+###########################
+
+class BigWin(gtk.Window):
     """ 显示进程的流量的窗口 """
     def __init__(self):
-        super(other_win,self).__init__()
+        super(BigWin,self).__init__()
         # 取消边框
 #        self.set_decorated(False)
         # 不在任务栏显示
@@ -29,7 +53,7 @@ class other_win(gtk.Window):
         self.sw = gtk.ScrolledWindow()
         self.sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
         self.sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-        self.set_default_size(300,300)
+        self.set_default_size(bwin_size[0],bwin_size[1])
         self.lstore = self.__create_model()
         treeview = gtk.TreeView(self.lstore)
         treeview.set_rules_hint(True)
@@ -94,22 +118,22 @@ class other_win(gtk.Window):
         column.set_sort_column_id(6)
         treeview.append_column(column)
 
-class main(gtk.Window):
+class SmallWin(gtk.Window):
     """ 主窗口,悬浮窗 """
     def __init__(self):
-        super(main,self).__init__()
+        super(SmallWin,self).__init__()
         # 只有按下左键时拖动窗体
         self.drag = False
         self.mouse_x, self.mouse_y = 0,0
         # 窗口置顶
         self.set_keep_above(True)
         # 主窗体初始大小
-        self.set_default_size(220,24)
+        self.set_default_size(swin_size[0],swin_size[1])
         # 初始坐标
-        self.x, self.y = 1110, 26
+        self.x, self.y = location
         self.move(self.x, self.y)
         # 透明度
-        self.set_opacity(0.8)
+        self.set_opacity(transparency)
         # 主窗体响应鼠标点击事件
         self.add_events(gtk.gdk.BUTTON_PRESS_MASK|\
                         gtk.gdk.BUTTON_RELEASE_MASK|\
@@ -124,21 +148,21 @@ class main(gtk.Window):
         # 取消边框
         self.set_decorated(False)
 
-        self.ow = other_win()
+        self.Bigw = BigWin()
 
         self.set_colormap(gtk.gdk.Screen().get_rgba_colormap())
         # cairo刷新区域显示total
 
         self.draw = gtk.DrawingArea()
         self.draw.connect("expose-event",self.on_expose)
-        self.pixbuf = gtk.gdk.pixbuf_new_from_file("./skin/bg.png")
+        self.pixbuf = gtk.gdk.pixbuf_new_from_file(bg_pic)
         self.add(self.draw)
-        self.queue_draw
 
         self.connect("button-press-event",self.mouse_click)
         self.connect("button-release-event",self.mouse_release)
         self.connect("motion-notify-event",self.mouse_move)
         self.show_all()
+        self.some = ""
 
     def on_expose(self, widget, event):
         cr = widget.window.cairo_create()
@@ -148,13 +172,19 @@ class main(gtk.Window):
         cr.paint()
         cr.set_source_pixbuf(self.pixbuf, rect.x, rect.y)
         cr.paint()
-        cr.set_source_rgb(0.0, 0.4588235294117647, 0.6588235294117647)
+        cr.set_source_rgb(fg[0],fg[1],fg[2])
         cr.move_to(10.0,17.0)
-        cr.set_font_size(15.0)
-        ar = netpcap.read()
-        cr.show_text(str(ar[1]))
-        gobject.timeout_add(1000,self.queue_draw)
-        self.ow.set_char(ar[0])
+        cr.set_font_size(font_size)
+        if self.some == netread:
+            cr.show_text(str(netread[1]))
+            self.Bigw.set_char(netread[0])
+            time.sleep(0.05)
+            self.queue_draw()
+        else:
+            cr.show_text(str(netread[1]))
+            self.Bigw.set_char(netread[0])
+            self.some = netread
+            self.queue_draw()
 
     # 鼠标移动事件
     def mouse_move(self,widget,event,data=None):
@@ -172,10 +202,10 @@ class main(gtk.Window):
         global is_show
         if event.type == gtk.gdk._2BUTTON_PRESS:
             if is_show:
-                self.ow.show_all()
+                self.Bigw.show_all()
                 is_show = False
             else:
-                self.ow.hide()
+                self.Bigw.hide()
                 is_show = True
             return
 
@@ -193,5 +223,5 @@ class main(gtk.Window):
         gtk.main()
 
 if __name__ == "__main__":
-    s = main()
+    s = SmallWin()
     s.star()

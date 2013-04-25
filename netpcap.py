@@ -15,9 +15,7 @@ import thread
 
 pc = pcap.pcap(get_Iface(),timeout_ms=1,promisc=False)
 pc.setfilter("tcp")
-r = [] # 最终结果
 total_info = {} # 每个进程总流量
-c = [] # 用于缓存上一次结果,避免流量还没产生而返回0给GUI
 
 def proc_traff(pid=None):
     """
@@ -54,12 +52,8 @@ def proc_traff(pid=None):
     return (proc_list,total)
 
 def traffic():
-#    global ts
-#    print ts
-    # 抓1000个包,1ms一个包,即1s
     ts = 1000
-    # {"sourceip:sourceport destination:ip:destination:port":"data_byte"....}
-    net_info = {}
+    net_info = {}# {"sourceip:sourceport destination:ip:destination:port":"data_byte"....}
     while 1:
         if ts < 1:break
         sip = dip = sport = dport = ""
@@ -76,6 +70,7 @@ def traffic():
                 if net_info.has_key(key):net_info[key] = net_info[key] + data_bytes
                 else: net_info[key] = data_bytes
         ts -= 1
+        time.sleep(0.0001)
 
     return net_info
 
@@ -105,15 +100,5 @@ def handle(net):
 
     return pid_info
 
-#def red():
-#    while 1:
-#        r.append(proc_traff(handle(traffic())))
-
 def read():
-#    global c
     return proc_traff(handle(traffic()))
-#    if len(r) > 0:c = r[:];return r.pop()
-#    elif len(c) <1 and len(r) <1 :return proc_traff()
-#    else:return c.pop()
-
-#thread.start_new_thread(red,())

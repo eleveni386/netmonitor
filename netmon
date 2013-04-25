@@ -15,7 +15,7 @@ then
     if [ -f $pwdfile ]
     then
         passwd=`cat $pwdfile`
-        echo $passwd|$_sudo -S ./netmonitor.py &
+        echo $passwd|$_sudo -S ./netmonitor.py &#> /dev/null &
         echo
     else
         echo "please entry User password for sudo"
@@ -24,6 +24,6 @@ then
     fi
 else
     echo $passwd > $pwdfile
-    echo $passwd|$_sudo -S ./netmonitor.py &
+    echo $passwd|$_sudo -S ./netmonitor.py &#> /dev/null &
     echo
 fi
