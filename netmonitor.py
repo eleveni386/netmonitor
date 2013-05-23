@@ -18,13 +18,13 @@ import netpcap
 
 is_show = True
 netread = netpcap.proc_traff()
+gtk.gdk.threads_init()
 
-def flush():
+def flush(widget):
     global netread
     while 1:
         netread = netpcap.read()
-
-thread.start_new_thread(flush,())
+        widget.queue_draw()
 
 def color_hex(color):
     gdk_color = gtk.gdk.color_parse(color)
@@ -152,7 +152,6 @@ class SmallWin(gtk.Window):
         self.Bigw = BigWin()
 
         self.set_colormap(gtk.gdk.Screen().get_rgba_colormap())
-        # cairo刷新区域显示total
 
         self.draw = gtk.DrawingArea()
         self.draw.connect("expose-event",self.on_expose)
@@ -163,7 +162,9 @@ class SmallWin(gtk.Window):
         self.connect("button-release-event",self.mouse_release)
         self.connect("motion-notify-event",self.mouse_move)
         self.show_all()
-        self.some = ""
+#        self.some = ""
+        # 界面刷新线程
+        thread.start_new_thread(flush,(self.draw,))
 
     def on_expose(self, widget, event):
         cr = widget.window.cairo_create()
@@ -176,16 +177,18 @@ class SmallWin(gtk.Window):
         cr.set_source_rgb(fg[0],fg[1],fg[2])
         cr.move_to(10.0,17.0)
         cr.set_font_size(font_size)
-        if self.some == netread:
-            cr.show_text(str(netread[1]))
-            self.Bigw.set_char(netread[0])
-            time.sleep(0.05)
-            self.queue_draw()
-        else:
-            cr.show_text(str(netread[1]))
-            self.Bigw.set_char(netread[0])
-            self.some = netread
-            self.queue_draw()
+        cr.show_text(str(netread[1]))
+        self.Bigw.set_char(netread[0])
+#        if self.some == netread:
+#            cr.show_text(str(netread[1]))
+#            self.Bigw.set_char(netread[0])
+#            time.sleep(0.05)
+#            self.queue_draw()
+#        else:
+#            cr.show_text(str(netread[1]))
+#            self.Bigw.set_char(netread[0])
+#            self.some = netread
+#            self.queue_draw()
 
     # 鼠标移动事件
     def mouse_move(self,widget,event,data=None):
@@ -221,7 +224,9 @@ class SmallWin(gtk.Window):
         gtk.main_quit()
 
     def star(self):
+        gtk.threads_enter()
         gtk.main()
+        gtk.threads_leave()
 
 if __name__ == "__main__":
     s = SmallWin()

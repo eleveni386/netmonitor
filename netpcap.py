@@ -14,7 +14,7 @@ from netcore import *
 import time
 import thread
 
-pc = pcap.pcap(get_Iface(),timeout_ms=1,promisc=False)
+pc = pcap.pcap(get_Iface(),timeout_ms=1)
 pc.setfilter("tcp")
 total_info = {} # 每个进程总流量
 
@@ -39,9 +39,11 @@ def proc_traff(pid=None):
     # 每个进程
     for i in buf:
         if not pre.match(i):
-
-            total_info[i] = tuple(map(lambda x,y :x+y,total_info[i], buf[i]))
-            proc_list.append((int(i.split('/')[0]),i.split('/')[1],conv(buf[i][0])+'/s', conv(buf[i][1])+'/s',conv(total_info[i][0]), conv(total_info[i][1])))
+            try:
+                total_info[i] = tuple(map(lambda x,y :x+y,total_info[i], buf[i]))
+                proc_list.append((int(i.split('/')[0]),i.split('/')[1],conv(buf[i][0])+'/s', conv(buf[i][1])+'/s',conv(total_info[i][0]), conv(total_info[i][1])))
+            except KeyError:
+                pass
 
     # 总流量
     up = down = 0.00
@@ -72,7 +74,6 @@ def traffic():
                 else: net_info[key] = data_bytes
         ts -= 1
         time.sleep(0.0001)
-
     return net_info
 
 def handle(net):
@@ -85,7 +86,6 @@ def handle(net):
     for key in net:
         if process.has_key(key):
             localip = key.split()[0].split(':')[0] # 如果源地址是本机地址,则认为这段数据包是上传数据
-#            print key,net[key]
             if localip == local_IP():
                 Up = round(float(net[key])/1024, 2)
                 Down = 0.00
