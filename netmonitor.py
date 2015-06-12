@@ -56,11 +56,15 @@ class BigWin(gtk.Window):
         self.sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
         self.set_default_size(bwin_size[0],bwin_size[1])
         self.lstore = self.__create_model()
-        treeview = gtk.TreeView(self.lstore)
-        treeview.set_rules_hint(True)
+        # 保存上一次的信息
+        self.treeview = gtk.TreeView(self.lstore)
+        self.treeview.set_rules_hint(True)
+        self.old_lstore = []
+        self.Iters = {}
+        self.model = self.treeview.get_model()
 
-        self.sw.add(treeview)
-        self.__add_columns(treeview)
+        self.sw.add(self.treeview)
+        self.__add_columns(self.treeview)
         self.vbox = gtk.VBox()
         self.vbox.pack_start(self.sw)
         self.add(self.vbox)
@@ -77,47 +81,80 @@ class BigWin(gtk.Window):
         return True
 
     def __add_data(self,lstore):
-        self.lstore.clear()
 
-        for item in lstore:
-            self.lstore.append([item[0], item[1], item[2], item[3], item[4], item[5], "正在运行"])
+        def modify(Tuple):
+            Tuple = list(Tuple)
+
+            Tuple[3] = '0.00' + " " + Tuple[3].split()[-1]
+            Tuple[4] = '0.00' + " " + Tuple[4].split()[-1]
+            return tuple(Tuple)
+
+        #self.lstore.clear()
+
+
+        # 为了留住上一次出现的进程, 这次更新界面不会被刷新掉
+        lstore_dict = dict((pid[1], pid) for pid in lstore )
+        old_lstore_dict = dict((pid[1],pid) for pid in self.old_lstore ) if self.old_lstore else {}
+        old_lstore_dict.update(lstore_dict)
+
+        #print len(self.Iters), len(old_lstore_dict.values())
+
+        if self.Iters:
+            for item in old_lstore_dict.values():
+                for index, elm in enumerate(item):
+                    Iter = self.Iters.get(item[1], None)
+                    if Iter:
+                        self.lstore.set( Iter, index, elm )
+                    else:
+                        self.Iters[item[1]] = self.lstore.append([item[0], item[1], item[2], item[3], item[4], item[5], item[6]])
+
+        else:
+            for item in old_lstore_dict.values():
+                self.Iters[item[1]] = self.lstore.append([item[0], item[1], item[2], item[3], item[4], item[5], item[6]])
+
+        self.old_lstore = map(modify, old_lstore_dict.values())
+
         return self.lstore
 
 
     def __create_model(self):
-        lstore = gtk.ListStore(int, str, str, str, str, str, str )
+        lstore = gtk.ListStore(str, int, str, str, str, str, str)
         return lstore
 
     def __add_columns(self, treeview):
         rendertext = gtk.CellRendererText()
 
-        column = gtk.TreeViewColumn('PID', rendertext, text=0)
+        column = gtk.TreeViewColumn('Proto', rendertext, text=0)
         column.set_sort_column_id(0)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('进程名称', rendertext, text=1)
+        column = gtk.TreeViewColumn('PID', rendertext, text=1)
         column.set_sort_column_id(1)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('下载速度', rendertext, text=2)
+        column = gtk.TreeViewColumn('进程名称', rendertext, text=2)
         column.set_sort_column_id(2)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('上传速度', rendertext, text=3)
+        column = gtk.TreeViewColumn('下载速度', rendertext, text=3)
         column.set_sort_column_id(3)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('下载流量', rendertext, text=4)
+        column = gtk.TreeViewColumn('上传速度', rendertext, text=4)
         column.set_sort_column_id(4)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('上传流量', rendertext, text=5)
+        column = gtk.TreeViewColumn('下载流量', rendertext, text=5)
         column.set_sort_column_id(5)
         treeview.append_column(column)
 
-        column = gtk.TreeViewColumn('进程状态', rendertext, text=6)
+        column = gtk.TreeViewColumn('上传流量', rendertext, text=6)
         column.set_sort_column_id(6)
         treeview.append_column(column)
+
+#        column = gtk.TreeViewColumn('进程状态', rendertext, text=7)
+#        column.set_sort_column_id(7)
+#        treeview.append_column(column)
 
 class SmallWin(gtk.Window):
     """ 主窗口,悬浮窗 """
@@ -162,7 +199,7 @@ class SmallWin(gtk.Window):
         self.connect("button-release-event",self.mouse_release)
         self.connect("motion-notify-event",self.mouse_move)
         self.show_all()
-#        self.some = ""
+
         # 界面刷新线程
         thread.start_new_thread(flush,(self.draw,))
 
@@ -179,16 +216,6 @@ class SmallWin(gtk.Window):
         cr.set_font_size(font_size)
         cr.show_text(str(netread[1]))
         self.Bigw.set_char(netread[0])
-#        if self.some == netread:
-#            cr.show_text(str(netread[1]))
-#            self.Bigw.set_char(netread[0])
-#            time.sleep(0.05)
-#            self.queue_draw()
-#        else:
-#            cr.show_text(str(netread[1]))
-#            self.Bigw.set_char(netread[0])
-#            self.some = netread
-#            self.queue_draw()
 
     # 鼠标移动事件
     def mouse_move(self,widget,event,data=None):
