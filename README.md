@@ -9,12 +9,16 @@ netmonitor
 
 依赖python-dpkt
 
-依赖 psutil
+依赖python-psutil
 
 请自行下载安装三个包
 
 执行./netmon  第一次执行会要求输入密码, 之后不再需要
 此次更新:
+
+2015-11-25
+1. 修复netpcap.py 的item 类型不正确而引起的报错
+2. 增加netmon的帮助说明
 
 2015-06-12
 
