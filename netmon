@@ -19,7 +19,8 @@ then
         echo
     else
         echo "please entry User password for sudo"
-        echo "exp: $0 eleven.i386(your password)"
+        echo "exp: $0 password"
+        echo "if put wrong password, you can find $HOME/.monitor_windows.pwd file and to edit password"
         exit 1
     fi
 else

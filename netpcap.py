@@ -50,7 +50,7 @@ def proc_traff(pid=None):
     for i in buf:
            up += buf[i][1]
            down += buf[i][0]
-    total = "↓ %s /S | ↑ %s /S"%(conv(down), conv(up))
+    total = "down %s /S | up %s /S"%(conv(down), conv(up))
 
     return (proc_list,total)
 
@@ -63,19 +63,22 @@ def traffic():
         for t, pkt in pc.readpkts():
             if len(pkt) >1 :
                 item = dpkt.ethernet.Ethernet(pkt)
-                proto = item.data.data.__class__.__name__
-                if proto == 'TCP' or proto == 'UDP':
-                    try:
-                        sip = "%d.%d.%d.%d"%(tuple(map(ord,list(item.data.src))))
-                        dip = "%d.%d.%d.%d"%(tuple(map(ord,list(item.data.dst))))
-                        sport = item.data.data.sport
-                        dport = item.data.data.dport
-                        data_bytes = len(item.data.data.data)
-                        key = "%s:%s %s:%s"%(sip,sport,dip,dport)
-                        if net_info.has_key(key):net_info[key] = net_info[key] + data_bytes
-                        else: net_info[key] = data_bytes
-                    except:
-                        pass
+                try:
+                    proto = item.data.data.__class__.__name__
+                    if proto == 'TCP' or proto == 'UDP':
+                        try:
+                            sip = "%d.%d.%d.%d"%(tuple(map(ord,list(item.data.src))))
+                            dip = "%d.%d.%d.%d"%(tuple(map(ord,list(item.data.dst))))
+                            sport = item.data.data.sport
+                            dport = item.data.data.dport
+                            data_bytes = len(item.data.data.data)
+                            key = "%s:%s %s:%s"%(sip,sport,dip,dport)
+                            if net_info.has_key(key):net_info[key] = net_info[key] + data_bytes
+                            else: net_info[key] = data_bytes
+                        except:
+                            pass
+                except AttributeError: 
+                    pass
         ts -= 1
         time.sleep(0.0001)
     return net_info
